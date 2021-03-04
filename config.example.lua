@@ -25,9 +25,3 @@ ctld.slingLoad = false
 ctld.maximumDistanceLogistic = 1000
 
 ctld.JTAC_jtacStatusF10 = false
-
-ctld.addCallback(function(_args)
-
-    trigger.action.outText(_args.action,10)
-
-end)
