@@ -150,7 +150,38 @@ do
         end
     end
 
+    local function spawnGroups(groupList)
+        for groupName,units in pairs(groupList) do
+            local groupData = {
+                ["hidden"] = false,
+                ["units"] = {},
+                ["name"] = groupName,
+                ["communication"] = true,
+                ["start_time"] = 0,
+                ["frequency"] = 124, 
+            }
+
+            for i,unit in ipairs(units) do
+                log("%s: ", unit.typeName, unit.unitName)
+                table.insert(groupData.units, {
+                    ["skill"] = "High",
+                    ["name"] = unit.unitName,
+                    ["type"] = unit.typeName,
+                    ["x"] = unit.x,
+                    ["y"] = unit.z,
+                    ["z"] = unit.y,
+                })
+            end
+
+            log("Spawning group %s", groupName)
+
+            coalition.addGroup(coalition.side.BLUE, Group.Category.GROUND, groupData)
+        end
+    end
+
     local function reconcileUnits()
+        local groupsToSpawn = {}
+
         for i,unit in ipairs(unitDB) do
             if unit.dead == "true" then
                 local u = Unit.getByName(unit.unitName)
@@ -159,7 +190,46 @@ do
                     u:destroy()
                 end
             end
+
+            if unit.shouldSpawn == "true" then
+                local groupName = unit.groupName
+                if not groupsToSpawn[groupName] then
+                    groupsToSpawn[groupName] = {}
+                end
+
+                table.insert(groupsToSpawn[groupName], unit)
+            end
         end
+
+        spawnGroups(groupsToSpawn)
+    end
+
+    function ctldCallback(args)
+        if args.action ~= "unpack" or not args.spawnedGroup then
+            return
+        end
+
+        local group = args.spawnedGroup
+        local groupName = group:getName()
+
+        log("Inserting group %s into DB", groupName)
+
+        for i,unit in ipairs(group:getUnits()) do
+            local record = makeUnitRecord(unit, false, true)
+            table.insert(unitDB, record)
+        end
+
+        writeReport()
+    end
+
+    local function initCTLDTracking()
+        if ctld == nil or ctld.addCallback == nil then
+            log("CTLD not present, skipping CTLD tracking")
+            return
+        end
+    
+        log("Adding CTLD tracking")
+        ctld.addCallback(ctldCallback)
     end
 
     function persistence.init()
@@ -168,7 +238,7 @@ do
 
         local fp = getReportFile()
 
-        if  fp then
+        if fp then
             local text = fp:read("*all")
             fp:close()
     
@@ -182,6 +252,8 @@ do
             log("Report file %s not found. Generating...", internalConfig.REPORT_FILENAME)
             writeReport()
         end
+
+        -- initCTLDTracking()
 
         mist.addEventHandler(eventHandler)
     end

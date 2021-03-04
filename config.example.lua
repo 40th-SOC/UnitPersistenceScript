@@ -5,3 +5,5 @@ persistence.config = {
 }
 
 persistence.init()
+
+timer.scheduleFunction(ctldCallback, { action="unpack", spawnedGroup=Group.getByName("ctld_group") }, timer.getTime() + 5)
