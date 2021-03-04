@@ -162,7 +162,6 @@ do
             }
 
             for i,unit in ipairs(units) do
-                log("%s: ", unit.typeName, unit.unitName)
                 table.insert(groupData.units, {
                     ["skill"] = "High",
                     ["name"] = unit.unitName,
@@ -253,7 +252,7 @@ do
             writeReport()
         end
 
-        -- initCTLDTracking()
+        initCTLDTracking()
 
         mist.addEventHandler(eventHandler)
     end
