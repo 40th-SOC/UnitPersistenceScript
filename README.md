@@ -1,4 +1,4 @@
-# WeaponUsage
+# UnitPersistenceScript
 
 A DCS Lua script that will persist the state of units (dead or alive) between server restarts. Also tracks units spawned via CTLD to persist them between restarts as well.
 
