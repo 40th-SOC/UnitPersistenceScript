@@ -1,5 +1,6 @@
 persistence.config = {
     ["REPORT_FILENAME"] = "units.csv",
+    ["TRACK_STATICS"] = true,
     -- ["PERSIST_CTLD_UNITS"] = true,
     -- ["IGNORED_TYPE_NAMES"] = {},
 }
