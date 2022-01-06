@@ -4,6 +4,7 @@ do
 
     local columns = {
         "unitName",
+        "category",
         "groupName",
         "typeName",
         "coalition",
@@ -69,7 +70,7 @@ do
             for i,col in ipairs(columns) do
                 -- Ensure the last column does not get a comma
                 local fmt = i == #columns and "%s" or "%s,"
-                row = row .. string.format(fmt, unitRecord[col])
+                row = row .. string.format(fmt, unitRecord[col] or "nil")
             end
             row = row .. "\n"
             csv = csv .. row
@@ -80,7 +81,7 @@ do
         fp:close()
     end
 
-    local function makeUnitRecord(unit, isDead, shouldSpawn)
+    local function makeUnitRecord(unit, category, isDead, shouldSpawn)
         local record = {}
         for i,col in ipairs(columns) do
             record[col] = nil
@@ -89,12 +90,13 @@ do
         local point = unit:getPoint()
 
         record.unitName = unit:getName()
-        record.groupName = unit:getGroup():getName()
+        record.groupName = unit.getGroup and unit:getGroup():getName()
         record.typeName = unit:getTypeName()
         record.coalition = unit:getCoalition()
         record.country = unit:getCountry()
         record.dead = isDead and "true" or "false"
         record.shouldSpawn = shouldSpawn and "true" or "false"
+        record.category = category
         record.x = point.x
         record.y = point.y
         record.z = point.z
@@ -109,12 +111,18 @@ do
         end
 
         if obj:getGroup():getCategory() == Group.Category.GROUND then
-         
-            local record = makeUnitRecord(obj, true, false)
+            local record = makeUnitRecord(obj, obj:getCategory(), true, false)
             log("Unit dead: %s", record.unitName)
             table.insert(unitDB, record)
             writeReport()
         end
+    end
+
+    local function handleStaticKilled(obj)
+        local record = makeUnitRecord(obj, obj:getCategory(), true, false)
+        log("Static dead: %s", record.unitName)
+        table.insert(unitDB, record)
+        writeReport()
     end
 
     local function eventHandler(event)
@@ -126,6 +134,10 @@ do
         if event.id == world.event.S_EVENT_DEAD then
             if object:getCategory() == Object.Category.UNIT then
                 handleUnitKilled(object)               
+            end
+
+            if object:getCategory() == Object.Category.STATIC then
+                handleStaticKilled(object)
             end
         end
     end
@@ -186,7 +198,17 @@ do
                 local u = Unit.getByName(unit.unitName)
 
                 if u then
+                    log("Removing unit: %s", unit.unitName)
                     u:destroy()
+                end
+
+                -- unit.category is a number, convert to string for comparison
+                if unit.category == string.format("%s", Object.Category.STATIC) then
+                    local s = StaticObject.getByName(unit.unitName)
+                    log("Removing static: %s", unit.unitName)
+                    if s then
+                        s:destroy()
+                    end
                 end
             end
 
@@ -214,7 +236,7 @@ do
         log("Inserting group %s into DB", groupName)
 
         for i,unit in ipairs(group:getUnits()) do
-            local record = makeUnitRecord(unit, false, true)
+            local record = makeUnitRecord(unit, unit:getCategory(), false, true)
             table.insert(unitDB, record)
         end
 
