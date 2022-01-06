@@ -198,6 +198,7 @@ do
                 local u = Unit.getByName(unit.unitName)
 
                 if u then
+                    log("Removing unit: %s", unit.unitName)
                     u:destroy()
                 end
 
